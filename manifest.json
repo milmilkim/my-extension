@@ -1,0 +1,10 @@
+{
+  "name": "Hello Extensions",
+  "description": "내가 확장프로그램을 만들다니 대단해!",
+  "version": "1.0",
+  "manifest_version": 3,
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": "icon.png"
+  }
+}
