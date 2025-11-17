@@ -16,11 +16,81 @@ const css = `
   }
 `;
 
-chrome.storage.sync.get("enable", (res) => {
-  enable = !!res.enable;
-  if (enable) {
-    const style = document.createElement("style");
-    style.textContent = css;
-    document.documentElement.appendChild(style);
+const style = document.createElement("style");
+style.textContent = css;
+
+const normalizeDomain = (v) => {
+  if (!v) return "";
+
+  return v
+    .toLowerCase()
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/.*$/, "");
+};
+
+const toggleStyle = (enabled) => {
+  console.log(enabled);
+  if (enabled) {
+    if (!style.isConnected) {
+      console.log("append");
+      document.documentElement.appendChild(style);
+    }
+  } else {
+    if (style.isConnected) {
+      style.remove();
+    }
   }
+};
+
+const hostname = location.hostname.replace(/^www\./, "");
+
+const applySettings = ({ enable, mode, whitelist, blacklist }) => {
+  if (!enable) {
+    toggleStyle(false);
+    return;
+  }
+
+  const shouldBlock = shouldBlockImages(
+    {
+      mode,
+      whitelist: whitelist.map((v) => normalizeDomain(v)) || [],
+      blacklist: blacklist.map((v) => normalizeDomain(v)) || [],
+    },
+    hostname
+  );
+
+  toggleStyle(shouldBlock);
+};
+
+chrome.storage.sync.get(["enable", "mode", "whitelist", "blacklist"], (res) => {
+  applySettings(res);
 });
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "sync") return;
+
+  chrome.storage.sync.get(
+    ["enable", "mode", "whitelist", "blacklist"],
+    (res) => {
+      applySettings(res);
+    }
+  );
+});
+
+const shouldBlockImages = ({ mode, whitelist, blacklist }, hostname) => {
+  switch (mode) {
+    case "all":
+      return true;
+
+    case "block-only":
+      return blacklist.includes(hostname);
+
+    case "allow-only":
+      return !whitelist.includes(hostname);
+
+    default:
+      return false;
+  }
+};
