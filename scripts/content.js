@@ -16,6 +16,11 @@ const css = `
   }
 `;
 
-const style = document.createElement("style");
-style.textContent = css;
-document.documentElement.appendChild(style);
+chrome.storage.sync.get("enable", (res) => {
+  enable = !!res.enable;
+  if (enable) {
+    const style = document.createElement("style");
+    style.textContent = css;
+    document.documentElement.appendChild(style);
+  }
+});
