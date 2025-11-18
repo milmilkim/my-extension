@@ -46,7 +46,19 @@ const toggleStyle = (enabled) => {
 
 const hostname = location.hostname.replace(/^www\./, "");
 
-const applySettings = ({ enable, mode, whitelist, blacklist }) => {
+const applySettings = (settings) => {
+  if (!settings || typeof settings !== "object") {
+    toggleStyle(false);
+    return;
+  }
+
+  const {
+    enable = false,
+    mode = "all",
+    whitelist = [],
+    blacklist = [],
+  } = settings;
+
   if (!enable) {
     toggleStyle(false);
     return;
@@ -55,8 +67,12 @@ const applySettings = ({ enable, mode, whitelist, blacklist }) => {
   const shouldBlock = shouldBlockImages(
     {
       mode,
-      whitelist: whitelist.map((v) => normalizeDomain(v)) || [],
-      blacklist: blacklist.map((v) => normalizeDomain(v)) || [],
+      whitelist: (Array.isArray(whitelist) ? whitelist : []).map(
+        normalizeDomain
+      ),
+      blacklist: (Array.isArray(blacklist) ? blacklist : []).map(
+        normalizeDomain
+      ),
     },
     hostname
   );
@@ -85,10 +101,10 @@ const shouldBlockImages = ({ mode, whitelist, blacklist }, hostname) => {
       return true;
 
     case "block-only":
-      return blacklist.includes(hostname);
+      return Array.isArray(blacklist) && blacklist.includes(hostname);
 
     case "allow-only":
-      return !whitelist.includes(hostname);
+      return !(Array.isArray(whitelist) && whitelist.includes(hostname));
 
     default:
       return false;
